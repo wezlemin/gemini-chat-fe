@@ -1,7 +1,7 @@
 import requests
 
 # Add your Gemini API key here.
-API_KEY = 'AIzaSyBs3y7_t9CWaZ1sLX05t9_E6grsNYv1ITg'
+API_KEY = ''
 MODEL = 'gemini-pro'
 API_URL = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key={API_KEY}'
 
