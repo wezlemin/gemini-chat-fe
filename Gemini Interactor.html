@@ -37,7 +37,7 @@
       background: #fafafa;
       margin-bottom: 10px;
       white-space: pre-wrap;
-      font-family: inherit; /* use normal font for messages */
+      font-family: inherit;
     }
 
     .msg {
@@ -101,7 +101,7 @@
 
     #apiKeyContainer {
       margin-bottom: 10px;
-      display: none; /* hide by default */
+      display: none;
     }
 
     #showApiKeyBtn {
@@ -130,7 +130,6 @@
   </div>
 
   <script>
-    // Load saved key
     const apiInput = document.getElementById("apiKey");
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
@@ -173,16 +172,27 @@
 
       // Markdown to HTML transformations
       reply = reply
+        // Bold + italics combined **_text_** or __*text*__
+        .replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
+        .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
+        // Bold
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
         .replace(/__(.*?)__/g, '<b>$1</b>')
+        // Italics
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/_(.*?)_/g, '<i>$1</i>')
+        // Headings
         .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
         .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
         .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
         .replace(/^### (.*)$/gm, '<h3>$1</h3>')
         .replace(/^## (.*)$/gm, '<h2>$1</h2>')
         .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+        // Code blocks and inline code
         .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>');
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Bullet points
+        .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
 
       addMessage(reply, "bot");
     }
