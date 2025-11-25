@@ -67,7 +67,7 @@
     <div class="messages" id="messages"></div>
 
     <div class="input-area">
-      <textarea id="msgInput" placeholder="Type a message..." ></textarea>
+      <textarea id="msgInput" placeholder="Type a message..."></textarea>
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -96,23 +96,20 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Remove stray stars used as bullets incorrectly
-      reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).map(line => line.trimEnd()).join('\n');
+      // Remove stray stars only when they appear alone on a line
+      reply = reply.split('\n').map(line => line.trimEnd()).filter(line => line !== '*').join('\n');
 
-      // Preserve original markdown for copy
       const rawReply = reply;
-
-      // Handle code blocks
       const codeBlocks = [];
       reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
         codeBlocks.push({ lang, code });
         return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
       });
 
-      // Convert inline code outside code blocks
+      // Inline code outside code blocks
       reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
 
-      // Convert headers and formatting
+      // Headers and formatting
       reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
                    .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -126,14 +123,23 @@
                    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
                    .replace(/^# (.*)$/gm, '<h1>$1</h1>');
 
-      // Convert markdown tables
-      reply = reply.replace(/\|(.+)\|/g, (_, row) => {
-        const cols = row.split('|').map(c => c.trim()).filter(Boolean);
-        if (cols.length === 0) return '';
-        return '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      // Parse Markdown tables properly
+      reply = reply.replace(/((?:\|.*\|\n?)+)/g, (match) => {
+        const lines = match.trim().split('\n');
+        if (lines.length < 2) return match;
+        const header = lines[0].split('|').map(c => c.trim()).filter(Boolean);
+        const alignRow = lines[1]; // skip alignment row
+        const bodyRows = lines.slice(2);
+        let html = '<table><thead><tr>' + header.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>'; 
+        bodyRows.forEach(row => {
+          const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+          if (cols.length) html += '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+        });
+        html += '</tbody></table>';
+        return html;
       });
 
-      // Restore code blocks with copy button
+      // Restore code blocks
       reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
         const { lang, code } = codeBlocks[index];
         return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
