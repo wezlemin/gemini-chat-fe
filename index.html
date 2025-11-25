@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Progress Code Generator</title>
+    <title>Progress Code Generator - Security Test</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -19,7 +19,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 {
-            color: #667eea;
+            color: #e53e3e;
             margin-bottom: 10px;
         }
         .warning {
@@ -58,7 +58,6 @@
             font-size: 16px;
             font-weight: 600;
             margin-top: 15px;
-            margin-right: 10px;
         }
         button:hover {
             background: #5a6cdb;
@@ -75,7 +74,7 @@
         }
         .stats {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin: 20px 0;
         }
@@ -99,12 +98,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Progress Code Generator</h1>
-        <p style="color: #718096;">Generate progress codes with various completion states</p>
+        <h1>🔓 Progress Code Generator</h1>
+        <p style="color: #718096;">Security Testing Tool - Demonstrates client-side encoding vulnerability</p>
         
-        <div class="info">
-            <strong>ℹ️ About This Tool</strong><br>
-            Generate encoded progress codes for different task completion scenarios. Use these codes to test progress tracking systems.
+        <div class="warning">
+            <strong>⚠️ Security Demonstration Only</strong><br>
+            This tool proves that client-side progress encoding can be easily bypassed. Any user can generate a "perfect score" code without completing tasks.
         </div>
 
         <label for="totalTasks">Total Number of Tasks:</label>
@@ -135,7 +134,7 @@
     </div>
 
     <script>
-        // Replicate your encoding functions
+        // Encoding functions
         function generateSalt() {
             const salt = new Uint8Array(4);
             for (let i = 0; i < 4; i++) {
@@ -238,7 +237,7 @@
             updateStats(taskProgress, totalTasks);
         }
 
-        // Initialize stats
+        // Initialise stats
         updateStats({}, parseInt(document.getElementById('totalTasks').value));
     </script>
 </body>
