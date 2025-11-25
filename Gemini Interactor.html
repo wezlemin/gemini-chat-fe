@@ -24,11 +24,11 @@
     body.light .user { background: #d0eaff; color: #000; }
     body.dark .user { background: #3a6ea5; color: #fff; }
 
-    .bot { align-self: flex-start; }
+    .bot { align-self: flex-start; display: flex; justify-content: space-between; }
     body.light .bot { background: #e8e8e8; color: #000; }
     body.dark .bot { background: #3c3c3c; color: #fff; }
 
-    .copy-message-btn { font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; flex-shrink: 0; }
+    .copy-message-btn { font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; flex-shrink: 0; align-self: flex-start; }
 
     pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 4px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; background: #f5f5f5; color: #000; }
     body.dark pre { background: #1e1e1e; color: #0f0; }
@@ -158,7 +158,7 @@
 
       addMessage(reply, "bot", rawReply);
     }
-
+    
     function addMessage(htmlContent, sender, rawMarkdown = '') {
       const box = document.getElementById("messages");
       const div = document.createElement("div");
@@ -166,6 +166,7 @@
       div.style.display = 'flex';
       div.style.alignItems = 'flex-start';
       div.style.gap = '5px';
+      if(sender === 'bot') div.style.justifyContent = 'space-between';
 
       const contentSpan = document.createElement('span');
       contentSpan.innerHTML = htmlContent;
@@ -175,6 +176,7 @@
         const copyBtn = document.createElement('button');
         copyBtn.textContent = 'C';
         copyBtn.className = 'copy-message-btn';
+        copyBtn.style.marginLeft = 'auto';
         copyBtn.onclick = () => { navigator.clipboard.writeText(rawMarkdown.trim()); alert('Message copied!'); };
         div.appendChild(copyBtn);
       }
