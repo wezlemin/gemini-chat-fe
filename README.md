@@ -1,9 +1,4 @@
-# python-runner-100
-This website creates codes for Python Code Runner (https://www.what2learn.com/wp-content/uploads/2025/11/pythonRunner15.html).
+# gemini-chat-fe
+Front-end for Gemini Chat
 
-It can generate:
-- "All Complete" Codes
-- "All Partial" Codes
-- Random Codes
-
-The task number can be adjusted.
+API: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}
