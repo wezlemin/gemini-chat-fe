@@ -13,6 +13,8 @@
     body.light .chat-container { background: #fff; }
     body.dark .chat-container { background: #1e1e1e; }
 
+    .button-row { display: flex; gap: 10px; margin-bottom: 10px; }
+
     .messages { flex: 1; overflow-y: auto; border: 1px solid #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; white-space: pre-wrap; font-family: inherit; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s; }
     body.light .messages { background: #fafafa; border-color: #ddd; }
     body.dark .messages { background: #2c2c2c; border-color: #333; }
@@ -49,14 +51,15 @@
     button:hover { background: #005fcc; }
 
     #apiKeyContainer { margin-bottom: 10px; display: none; }
-    #showApiKeyBtn, #toggleDarkModeBtn { margin-bottom: 10px; align-self: flex-start; }
   </style>
 </head>
 <body>
 
   <div class="chat-container">
-    <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
-    <button id="toggleDarkModeBtn" onclick="toggleDarkMode()">Toggle Dark/Light Mode</button>
+    <div class="button-row">
+      <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
+      <button id="toggleDarkModeBtn" onclick="toggleDarkMode()">Toggle Dark/Light Mode</button>
+    </div>
     <div id="apiKeyContainer">
       <div class="input-area">
         <input id="apiKey" placeholder="Your Gemini API Key..." />
@@ -76,7 +79,6 @@
     const apiInput = document.getElementById("apiKey");
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
-    // Load saved theme (light/dark)
     const savedTheme = localStorage.getItem('gemini_theme') || 'dark';
     document.body.classList.add(savedTheme);
 
