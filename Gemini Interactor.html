@@ -17,7 +17,7 @@
     body.light .messages { background: #fafafa; border-color: #ddd; }
     body.dark .messages { background: #2c2c2c; border-color: #333; }
 
-    .msg { margin: 8px 0; padding: 8px 12px; border-radius: 6px; word-wrap: break-word; position: relative; }
+    .msg { margin: 4px 0; padding: 6px 10px; border-radius: 6px; word-wrap: break-word; position: relative; display: flex; align-items: flex-start; gap: 5px; }
     .user { align-self: flex-end; }
     body.light .user { background: #d0eaff; color: #000; }
     body.dark .user { background: #3a6ea5; color: #fff; }
@@ -26,17 +26,20 @@
     body.light .bot { background: #e8e8e8; color: #000; }
     body.dark .bot { background: #3c3c3c; color: #fff; }
 
-    .copy-message-btn { position: absolute; top: 5px; right: 5px; font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; }
+    .copy-message-btn { font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; flex-shrink: 0; }
 
-    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; }
+    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 4px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; }
     body.light pre { background: #f5f5f5; color: #000; }
     body.dark pre { background: #000; color: #0f0; }
 
     pre button.copy-btn { position: absolute; top: 5px; right: 5px; padding: 2px 6px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; background: #28a745; color: white; }
 
-    code { font-family: monospace; padding: 2px 4px; border-radius: 3px; transition: background 0.3s, color 0.3s; }
-    body.light code { background: #e0e0e0; color: #000; }
-    body.dark code { background: #444; color: #f1f1f1; }
+    code.inline { font-family: monospace; padding: 2px 4px; border-radius: 3px; background: #e0e0e0; color: #000; transition: background 0.3s, color 0.3s; }
+    body.dark code.inline { background: #2c2c2c; color: #0f0; }
+
+    table { border-collapse: collapse; margin: 5px 0; width: 100%; }
+    th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
+    body.dark th, body.dark td { border-color: #555; }
 
     .input-area { display: flex; gap: 10px; }
     textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; resize: none; font-family: inherit; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s, border 0.3s; }
@@ -94,12 +97,18 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Cleanup stray * or - lines and extra newlines
+      // Remove stray stars and extra newlines
       reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).map(line => line.trimEnd()).join('\n');
 
-      // Handle code blocks separately
+      // Handle code blocks with language specifier properly
       const codeBlocks = [];
-      reply = reply.replace(/```([\s\S]*?)```/g, (_, code) => { codeBlocks.push(code); return `@@CODEBLOCK${codeBlocks.length - 1}@@`; });
+      reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        codeBlocks.push({ lang, code });
+        return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
+      });
+
+      // Apply inline code markdown outside code blocks
+      reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
 
       // Apply markdown outside code blocks
       reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
@@ -114,10 +123,20 @@
                    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
                    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
                    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-                   .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
+                   .replace(/^\|(.+)$/gm, (_, row) => {
+                      const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+                      if (cols.length === 0) return '';
+                      if (!cols.some(c => c.startsWith(':'))) {
+                        return '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                      }
+                      return '';
+                   });
 
-      // Restore code blocks with copy buttons
-      reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => `<pre><button class='copy-btn' onclick='copySnippet(${index})'>Copy</button>${codeBlocks[index]}</pre>`);
+      // Restore code blocks with copy buttons, language name displayed separately
+      reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
+        const { lang, code } = codeBlocks[index];
+        return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
+      });
 
       addMessage(reply, "bot", codeBlocks);
     }
@@ -126,13 +145,19 @@
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
-      div.innerHTML = text;
+      div.style.display = 'flex';
+      div.style.alignItems = 'flex-start';
+      div.style.gap = '5px';
+
+      const contentSpan = document.createElement('span');
+      contentSpan.innerHTML = text;
+      div.appendChild(contentSpan);
 
       if (sender === 'bot') {
         const copyBtn = document.createElement('button');
-        copyBtn.textContent = 'Copy Message';
+        copyBtn.textContent = 'C';
         copyBtn.className = 'copy-message-btn';
-        copyBtn.onclick = () => { navigator.clipboard.writeText(div.innerText.replace(/Copy\sSnippet/g, '')); alert('Message copied!'); };
+        copyBtn.onclick = () => { navigator.clipboard.writeText(contentSpan.innerText.trim()); alert('Message copied!'); };
         div.appendChild(copyBtn);
       }
 
@@ -142,7 +167,8 @@
 
     function copySnippet(index) {
       const pre = document.querySelectorAll('pre')[index];
-      const codeText = pre.textContent.replace('Copy', '').trim();
+      const codeLines = Array.from(pre.childNodes).filter(node => node.nodeName !== 'BUTTON' && node.nodeName !== 'CODE');
+      const codeText = codeLines.map(node => node.textContent).join('\n');
       navigator.clipboard.writeText(codeText);
       alert('Code snippet copied!');
     }
