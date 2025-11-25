@@ -35,7 +35,8 @@
       border-radius: 8px;
       background: #fafafa;
       margin-bottom: 10px;
-      white-space: pre-wrap; /* preserve new lines */
+      white-space: pre-wrap;
+      font-family: monospace;
     }
 
     .msg {
@@ -53,6 +54,15 @@
     .bot {
       background: #e8e8e8;
       align-self: flex-start;
+    }
+
+    pre {
+      background: #333;
+      color: #eee;
+      padding: 8px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: monospace;
     }
 
     .input-area {
@@ -99,7 +109,6 @@
   </div>
 
   <script>
-    // Load saved key on startup
     document.getElementById("apiKey").value = localStorage.getItem("gemini_api_key") || "";
 
     function saveKey() {
@@ -134,15 +143,20 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Convert **bold** syntax to <b> and headings (#) to <h1>, <h2>, etc.
-      reply = reply
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-        .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
-        .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
-        .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
-        .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.*)$/gm, '<h1>$1</h1>');
+      // Markdown to HTML transformations
+      // Bold
+      reply = reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      // Headings
+      reply = reply.replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+                   .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+                   .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+                   .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+                   .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+                   .replace(/^# (.*)$/gm, '<h1>$1</h1>');
+      // Code blocks ```
+      reply = reply.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
+      // Inline code `code`
+      reply = reply.replace(/`([^`]+)`/g, '<code>$1</code>');
 
       addMessage(reply, "bot");
     }
@@ -151,7 +165,7 @@
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
-      div.innerHTML = text; // use innerHTML to render bold/headings
+      div.innerHTML = text;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
