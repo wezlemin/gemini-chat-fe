@@ -41,6 +41,7 @@
       margin: 8px 0;
       padding: 8px 12px;
       border-radius: 6px;
+      word-wrap: break-word;
     }
 
     .user {
@@ -91,7 +92,7 @@
     <div class="messages" id="messages"></div>
 
     <div class="input-area">
-      <input id="msgInput" placeholder="Type a message..." />
+      <input id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter'){sendMessage();}" />
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -130,7 +131,10 @@
       });
 
       const data = await res.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+      let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+
+      // Convert **bold** syntax to HTML <b> for display
+      reply = reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
       addMessage(reply, "bot");
     }
@@ -139,7 +143,7 @@
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
-      div.textContent = text;
+      div.innerHTML = text; // use innerHTML to render <b> tags
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
