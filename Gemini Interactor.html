@@ -28,16 +28,15 @@
 
     .copy-message-btn { font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; flex-shrink: 0; }
 
-    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 4px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; }
-    body.light pre { background: #f5f5f5; color: #000; }
-    body.dark pre { background: #000; color: #0f0; }
+    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 4px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; background: #f5f5f5; color: #000; }
+    body.dark pre { background: #1e1e1e; color: #0f0; }
 
     pre button.copy-btn { position: absolute; top: 5px; right: 5px; padding: 2px 6px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; background: #28a745; color: white; }
 
     code.inline { font-family: monospace; padding: 2px 4px; border-radius: 3px; background: #e0e0e0; color: #000; transition: background 0.3s, color 0.3s; }
     body.dark code.inline { background: #2c2c2c; color: #0f0; }
 
-    table { border-collapse: collapse; margin: 5px 0; width: 100%; }
+    table { border-collapse: collapse; margin: 5px 0; width: 100%; display: table; }
     th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
     body.dark th, body.dark td { border-color: #555; }
 
@@ -68,7 +67,7 @@
     <div class="messages" id="messages"></div>
 
     <div class="input-area">
-      <textarea id="msgInput" placeholder="Type a message..."></textarea>
+      <textarea id="msgInput" placeholder="Type a message..." ></textarea>
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -97,20 +96,23 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Remove stray stars and extra newlines
+      // Remove stray stars used as bullets incorrectly
       reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).map(line => line.trimEnd()).join('\n');
 
-      // Handle code blocks with language specifier properly
+      // Preserve original markdown for copy
+      const rawReply = reply;
+
+      // Handle code blocks
       const codeBlocks = [];
       reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
         codeBlocks.push({ lang, code });
         return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
       });
 
-      // Apply inline code markdown outside code blocks
+      // Convert inline code outside code blocks
       reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
 
-      // Apply markdown outside code blocks
+      // Convert headers and formatting
       reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
                    .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -122,26 +124,25 @@
                    .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
                    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
                    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-                   .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-                   .replace(/^\|(.+)$/gm, (_, row) => {
-                      const cols = row.split('|').map(c => c.trim()).filter(Boolean);
-                      if (cols.length === 0) return '';
-                      if (!cols.some(c => c.startsWith(':'))) {
-                        return '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
-                      }
-                      return '';
-                   });
+                   .replace(/^# (.*)$/gm, '<h1>$1</h1>');
 
-      // Restore code blocks with copy buttons, language name displayed separately
+      // Convert markdown tables
+      reply = reply.replace(/\|(.+)\|/g, (_, row) => {
+        const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+        if (cols.length === 0) return '';
+        return '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      });
+
+      // Restore code blocks with copy button
       reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
         const { lang, code } = codeBlocks[index];
         return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
       });
 
-      addMessage(reply, "bot", codeBlocks);
+      addMessage(reply, "bot", rawReply);
     }
 
-    function addMessage(text, sender, codeBlocks = []) {
+    function addMessage(htmlContent, sender, rawMarkdown = '') {
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
@@ -150,14 +151,14 @@
       div.style.gap = '5px';
 
       const contentSpan = document.createElement('span');
-      contentSpan.innerHTML = text;
+      contentSpan.innerHTML = htmlContent;
       div.appendChild(contentSpan);
 
       if (sender === 'bot') {
         const copyBtn = document.createElement('button');
         copyBtn.textContent = 'C';
         copyBtn.className = 'copy-message-btn';
-        copyBtn.onclick = () => { navigator.clipboard.writeText(contentSpan.innerText.trim()); alert('Message copied!'); };
+        copyBtn.onclick = () => { navigator.clipboard.writeText(rawMarkdown.trim()); alert('Message copied!'); };
         div.appendChild(copyBtn);
       }
 
