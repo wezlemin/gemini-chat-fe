@@ -5,198 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gemini Chat (Frontend)</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      transition: background 0.3s, color 0.3s;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; transition: background 0.3s, color 0.3s; }
+    body.light { background: #f0f0f0; color: #121212; }
+    body.dark { background: #121212; color: #e0e0e0; }
 
-    body.light {
-      background: #f0f0f0;
-      color: #121212;
-    }
+    .chat-container { width: 700px; max-width: 90%; height: 85vh; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); padding: 20px; display: flex; flex-direction: column; transition: background 0.3s; }
+    body.light .chat-container { background: #fff; }
+    body.dark .chat-container { background: #1e1e1e; }
 
-    body.dark {
-      background: #121212;
-      color: #e0e0e0;
-    }
+    .messages { flex: 1; overflow-y: auto; border: 1px solid #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; white-space: pre-wrap; font-family: inherit; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s; }
+    body.light .messages { background: #fafafa; border-color: #ddd; }
+    body.dark .messages { background: #2c2c2c; border-color: #333; }
 
-    .chat-container {
-      width: 700px;
-      max-width: 90%;
-      height: 85vh;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      transition: background 0.3s;
-    }
+    .msg { margin: 8px 0; padding: 8px 12px; border-radius: 6px; word-wrap: break-word; position: relative; }
+    .user { align-self: flex-end; }
+    body.light .user { background: #d0eaff; color: #000; }
+    body.dark .user { background: #3a6ea5; color: #fff; }
 
-    body.light .chat-container {
-      background: #fff;
-    }
+    .bot { align-self: flex-start; }
+    body.light .bot { background: #e8e8e8; color: #000; }
+    body.dark .bot { background: #3c3c3c; color: #fff; }
 
-    body.dark .chat-container {
-      background: #1e1e1e;
-    }
+    .copy-message-btn { position: absolute; top: 5px; right: 5px; font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; }
 
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      border: 1px solid #333;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      white-space: pre-wrap;
-      font-family: inherit;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      transition: background 0.3s;
-    }
+    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; }
+    body.light pre { background: #f5f5f5; color: #000; }
+    body.dark pre { background: #000; color: #0f0; }
 
-    body.light .messages {
-      background: #fafafa;
-      border-color: #ddd;
-    }
+    pre button.copy-btn { position: absolute; top: 5px; right: 5px; padding: 2px 6px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; background: #28a745; color: white; }
 
-    body.dark .messages {
-      background: #2c2c2c;
-      border-color: #333;
-    }
+    code { font-family: monospace; padding: 2px 4px; border-radius: 3px; transition: background 0.3s, color 0.3s; }
+    body.light code { background: #e0e0e0; color: #000; }
+    body.dark code { background: #444; color: #f1f1f1; }
 
-    .msg {
-      margin: 8px 0;
-      padding: 8px 12px;
-      border-radius: 6px;
-      word-wrap: break-word;
-    }
+    .input-area { display: flex; gap: 10px; }
+    textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; resize: none; font-family: inherit; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s, border 0.3s; }
+    body.light textarea { background: #fff; color: #000; border: 1px solid #ccc; }
+    body.dark textarea { background: #1e1e1e; color: #e0e0e0; border: 1px solid #555; }
 
-    .user {
-      align-self: flex-end;
-    }
+    button { padding: 10px 15px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s; }
+    button:hover { background: #005fcc; }
 
-    body.light .user {
-      background: #d0eaff;
-      color: #000;
-    }
-
-    body.dark .user {
-      background: #3a6ea5;
-      color: #fff;
-    }
-
-    .bot {
-      align-self: flex-start;
-    }
-
-    body.light .bot {
-      background: #e8e8e8;
-      color: #000;
-    }
-
-    body.dark .bot {
-      background: #3c3c3c;
-      color: #fff;
-    }
-
-    pre {
-      padding: 8px;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-family: monospace;
-      margin: 8px 0;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      transition: background 0.3s, color 0.3s;
-    }
-
-    body.light pre {
-      background: #f5f5f5;
-      color: #000;
-    }
-
-    body.dark pre {
-      background: #000;
-      color: #0f0;
-    }
-
-    code {
-      font-family: monospace;
-      padding: 2px 4px;
-      border-radius: 3px;
-      transition: background 0.3s, color 0.3s;
-    }
-
-    body.light code {
-      background: #e0e0e0;
-      color: #000;
-    }
-
-    body.dark code {
-      background: #444;
-      color: #f1f1f1;
-    }
-
-    .input-area {
-      display: flex;
-      gap: 10px;
-    }
-
-    textarea {
-      flex: 1;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #555;
-      resize: none;
-      font-family: inherit;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      transition: background 0.3s, color 0.3s, border 0.3s;
-    }
-
-    body.light textarea {
-      background: #fff;
-      color: #000;
-      border: 1px solid #ccc;
-    }
-
-    body.dark textarea {
-      background: #1e1e1e;
-      color: #e0e0e0;
-      border: 1px solid #555;
-    }
-
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background: #005fcc;
-    }
-
-    #apiKeyContainer {
-      margin-bottom: 10px;
-      display: none;
-    }
-
-    #showApiKeyBtn, #toggleDarkModeBtn {
-      margin-bottom: 10px;
-      align-self: flex-start;
-    }
+    #apiKeyContainer { margin-bottom: 10px; display: none; }
+    #showApiKeyBtn, #toggleDarkModeBtn { margin-bottom: 10px; align-self: flex-start; }
   </style>
 </head>
 <body class="dark">
@@ -223,93 +74,77 @@
     const apiInput = document.getElementById("apiKey");
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
-    function toggleApiKey() {
-      const container = document.getElementById("apiKeyContainer");
-      container.style.display = container.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark');
-      document.body.classList.toggle('light');
-    }
-
-    function saveKey() {
-      const key = apiInput.value.trim();
-      if (!key) return alert("Please enter a valid API key.");
-      localStorage.setItem("gemini_api_key", key);
-      alert("API Key saved!");
-    }
+    function toggleApiKey() { document.getElementById("apiKeyContainer").style.display = document.getElementById("apiKeyContainer").style.display === 'none' ? 'block' : 'none'; }
+    function toggleDarkMode() { document.body.classList.toggle('dark'); document.body.classList.toggle('light'); }
+    function saveKey() { const key = apiInput.value.trim(); if (!key) return alert("Please enter a valid API key."); localStorage.setItem("gemini_api_key", key); alert("API Key saved!"); }
 
     const textarea = document.getElementById("msgInput");
-    textarea.addEventListener('keydown', function(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-      }
-    });
+    textarea.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
 
-   async function sendMessage() {
-  const apiKey = localStorage.getItem("gemini_api_key");
-  if (!apiKey) return alert("Please enter and save your API key first.");
+    async function sendMessage() {
+      const apiKey = localStorage.getItem("gemini_api_key");
+      if (!apiKey) return alert("Please enter and save your API key first.");
+      const text = textarea.value.trim();
+      if (!text) return;
+      addMessage(text, "user");
+      textarea.value = "";
 
-  const text = textarea.value.trim();
-  if (!text) return;
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: { parts: [{ text }] }, systemInstruction: { parts: [{ text: "You are a friendly AI assistant." }] } }) });
+      const data = await res.json();
+      let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-  addMessage(text, "user");
-  textarea.value = "";
+      // Cleanup stray * or - lines and extra newlines
+      reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).map(line => line.trimEnd()).join('\n');
 
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: { parts: [{ text }] },
-      systemInstruction: { parts: [{ text: "You are a friendly AI assistant." }] }
-    })
-  });
+      // Handle code blocks separately
+      const codeBlocks = [];
+      reply = reply.replace(/```([\s\S]*?)```/g, (_, code) => { codeBlocks.push(code); return `@@CODEBLOCK${codeBlocks.length - 1}@@`; });
 
-  const data = await res.json();
-  let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+      // Apply markdown outside code blocks
+      reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
+                   .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
+                   .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                   .replace(/__(.*?)__/g, '<b>$1</b>')
+                   .replace(/\*(.*?)\*/g, '<i>$1</i>')
+                   .replace(/_(.*?)_/g, '<i>$1</i>')
+                   .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+                   .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+                   .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+                   .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+                   .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+                   .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+                   .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
 
-  // Cleanup stray single * or - lines
-  reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).join('\n');
+      // Restore code blocks with copy buttons
+      reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => `<pre><button class='copy-btn' onclick='copySnippet(${index})'>Copy</button>${codeBlocks[index]}</pre>`);
 
-  // === Handle code blocks separately ===
-  const codeBlocks = [];
-  reply = reply.replace(/```([\s\S]*?)```/g, (_, code) => {
-    codeBlocks.push(code);
-    return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
-  });
+      addMessage(reply, "bot", codeBlocks);
+    }
 
-  // Other Markdown replacements
-  reply = reply
-    .replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
-    .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
-    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-    .replace(/__(.*?)__/g, '<b>$1</b>')
-    .replace(/\*(.*?)\*/g, '<i>$1</i>')
-    .replace(/_(.*?)_/g, '<i>$1</i>')
-    .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
-    .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
-    .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
-    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-    .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
-
-  // Restore code blocks without formatting
-  reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => `<pre>${codeBlocks[index]}</pre>`);
-
-  addMessage(reply, "bot");
-}
-
-    function addMessage(text, sender) {
+    function addMessage(text, sender, codeBlocks = []) {
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
       div.innerHTML = text;
+
+      if (sender === 'bot') {
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy Message';
+        copyBtn.className = 'copy-message-btn';
+        copyBtn.onclick = () => { navigator.clipboard.writeText(div.innerText.replace(/Copy\sSnippet/g, '')); alert('Message copied!'); };
+        div.appendChild(copyBtn);
+      }
+
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
+    }
+
+    function copySnippet(index) {
+      const pre = document.querySelectorAll('pre')[index];
+      const codeText = pre.textContent.replace('Copy', '').trim();
+      navigator.clipboard.writeText(codeText);
+      alert('Code snippet copied!');
     }
   </script>
 
