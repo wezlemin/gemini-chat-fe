@@ -52,7 +52,7 @@
     #showApiKeyBtn, #toggleDarkModeBtn { margin-bottom: 10px; align-self: flex-start; }
   </style>
 </head>
-<body class="dark">
+<body>
 
   <div class="chat-container">
     <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
@@ -76,8 +76,23 @@
     const apiInput = document.getElementById("apiKey");
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
+    // Load saved theme (light/dark)
+    const savedTheme = localStorage.getItem('gemini_theme') || 'dark';
+    document.body.classList.add(savedTheme);
+
     function toggleApiKey() { document.getElementById("apiKeyContainer").style.display = document.getElementById("apiKeyContainer").style.display === 'none' ? 'block' : 'none'; }
-    function toggleDarkMode() { document.body.classList.toggle('dark'); document.body.classList.toggle('light'); }
+    function toggleDarkMode() {
+      if(document.body.classList.contains('dark')) {
+        document.body.classList.remove('dark');
+        document.body.classList.add('light');
+        localStorage.setItem('gemini_theme', 'light');
+      } else {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+        localStorage.setItem('gemini_theme', 'dark');
+      }
+    }
+
     function saveKey() { const key = apiInput.value.trim(); if (!key) return alert("Please enter a valid API key."); localStorage.setItem("gemini_api_key", key); alert("API Key saved!"); }
 
     const textarea = document.getElementById("msgInput");
@@ -96,7 +111,6 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Remove stray stars only when they appear alone on a line
       reply = reply.split('\n').map(line => line.trimEnd()).filter(line => line !== '*').join('\n');
 
       const rawReply = reply;
@@ -106,10 +120,8 @@
         return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
       });
 
-      // Inline code outside code blocks
       reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
 
-      // Headers and formatting
       reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
                    .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -123,12 +135,10 @@
                    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
                    .replace(/^# (.*)$/gm, '<h1>$1</h1>');
 
-      // Parse Markdown tables properly
       reply = reply.replace(/((?:\|.*\|\n?)+)/g, (match) => {
         const lines = match.trim().split('\n');
         if (lines.length < 2) return match;
         const header = lines[0].split('|').map(c => c.trim()).filter(Boolean);
-        const alignRow = lines[1]; // skip alignment row
         const bodyRows = lines.slice(2);
         let html = '<table><thead><tr>' + header.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>'; 
         bodyRows.forEach(row => {
@@ -139,7 +149,6 @@
         return html;
       });
 
-      // Restore code blocks
       reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
         const { lang, code } = codeBlocks[index];
         return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
