@@ -108,12 +108,12 @@
     pre {
       padding: 8px;
       border-radius: 6px;
-      overflow-x: auto;
       font-family: monospace;
       margin: 8px 0;
       white-space: pre-wrap;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      position: relative;
       transition: background 0.3s, color 0.3s;
     }
 
@@ -125,6 +125,19 @@
     body.dark pre {
       background: #000;
       color: #0f0;
+    }
+
+    pre button.copy-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      padding: 2px 6px;
+      font-size: 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
     }
 
     code {
@@ -271,9 +284,18 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Cleanup stray single * or - lines
+      // Remove stray single * or - lines
       reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).join('\n');
 
+      // Extract fenced code blocks to placeholders
+      const codeBlocks = [];
+      reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+        const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
+        codeBlocks.push({ code: code, lang: lang });
+        return placeholder;
+      });
+
+      // Apply markdown outside code blocks
       reply = reply
         .replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
         .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
@@ -287,11 +309,23 @@
         .replace(/^### (.*)$/gm, '<h3>$1</h3>')
         .replace(/^## (.*)$/gm, '<h2>$1</h2>')
         .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-        .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
 
+      // Restore code blocks with copy button
+      codeBlocks.forEach((block, i) => {
+        const html = `<pre><button class='copy-btn' onclick='copyCode(${i})'>Copy</button>${block.lang ? '<code>' + block.lang + '</code>\n' : ''}${block.code}</pre>`;
+        reply = reply.replace(`___CODE_BLOCK_${i}___`, html);
+      });
+
       addMessage(reply, "bot");
+    }
+
+    function copyCode(index) {
+      const pre = document.querySelectorAll('pre')[index];
+      const codeLines = Array.from(pre.childNodes).filter(n => n.nodeName === '#text' || n.nodeName === 'TEXT');
+      const textToCopy = codeLines.map(n => n.textContent).join('');
+      navigator.clipboard.writeText(textToCopy);
+      alert('Code copied!');
     }
 
     function addMessage(text, sender) {
