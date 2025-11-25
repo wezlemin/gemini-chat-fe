@@ -35,6 +35,7 @@
       border-radius: 8px;
       background: #fafafa;
       margin-bottom: 10px;
+      white-space: pre-wrap; /* preserve new lines */
     }
 
     .msg {
@@ -133,8 +134,15 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Convert **bold** syntax to HTML <b> for display
-      reply = reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+      // Convert **bold** syntax to <b> and headings (#) to <h1>, <h2>, etc.
+      reply = reply
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+        .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+        .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+        .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.*)$/gm, '<h1>$1</h1>');
 
       addMessage(reply, "bot");
     }
@@ -143,7 +151,7 @@
       const box = document.getElementById("messages");
       const div = document.createElement("div");
       div.className = `msg ${sender}`;
-      div.innerHTML = text; // use innerHTML to render <b> tags
+      div.innerHTML = text; // use innerHTML to render bold/headings
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
