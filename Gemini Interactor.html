@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Chat (Frontend)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 400px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fafafa;
+      margin-bottom: 10px;
+    }
+
+    .msg {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    .user {
+      background: #d0eaff;
+      align-self: flex-end;
+    }
+
+    .bot {
+      background: #e8e8e8;
+      align-self: flex-start;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fcc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container">
+    <h3>🔑 Enter your API Key</h3>
+    <div class="input-area">
+      <input id="apiKey" placeholder="Your Gemini API Key..." />
+      <button onclick="saveKey()">Save</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <input id="msgInput" placeholder="Type a message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Load saved key on startup
+    document.getElementById("apiKey").value = localStorage.getItem("gemini_api_key") || "";
+
+    function saveKey() {
+      const key = document.getElementById("apiKey").value.trim();
+      if (!key) return alert("Please enter a valid API key.");
+      localStorage.setItem("gemini_api_key", key);
+      alert("API Key saved!");
+    }
+
+    async function sendMessage() {
+      const apiKey = localStorage.getItem("gemini_api_key");
+      if (!apiKey) return alert("Please enter and save your API key first.");
+
+      const input = document.getElementById("msgInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMessage(text, "user");
+      input.value = "";
+
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: { parts: [{ text }] },
+          systemInstruction: { parts: [{ text: "You are a friendly AI assistant." }] }
+        })
+      });
+
+      const data = await res.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+
+      addMessage(reply, "bot");
+    }
+
+    function addMessage(text, sender) {
+      const box = document.getElementById("messages");
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+  </script>
+
+</body>
+</html>
