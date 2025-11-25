@@ -17,14 +17,15 @@
     }
 
     .chat-container {
-      width: 400px;
+      width: 700px;
+      max-width: 90%;
+      height: 85vh;
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 0 15px rgba(0,0,0,0.1);
       padding: 20px;
       display: flex;
       flex-direction: column;
-      height: 80vh;
     }
 
     .messages {
@@ -36,7 +37,7 @@
       background: #fafafa;
       margin-bottom: 10px;
       white-space: pre-wrap;
-      font-family: monospace;
+      font-family: inherit; /* use normal font for messages */
     }
 
     .msg {
@@ -63,6 +64,14 @@
       border-radius: 6px;
       overflow-x: auto;
       font-family: monospace;
+      margin: 8px 0;
+    }
+
+    code {
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
     }
 
     .input-area {
@@ -89,15 +98,27 @@
     button:hover {
       background: #005fcc;
     }
+
+    #apiKeyContainer {
+      margin-bottom: 10px;
+      display: none; /* hide by default */
+    }
+
+    #showApiKeyBtn {
+      margin-bottom: 10px;
+      align-self: flex-start;
+    }
   </style>
 </head>
 <body>
 
   <div class="chat-container">
-    <h3>🔑 Enter your API Key</h3>
-    <div class="input-area">
-      <input id="apiKey" placeholder="Your Gemini API Key..." />
-      <button onclick="saveKey()">Save</button>
+    <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
+    <div id="apiKeyContainer">
+      <div class="input-area">
+        <input id="apiKey" placeholder="Your Gemini API Key..." />
+        <button onclick="saveKey()">Save</button>
+      </div>
     </div>
 
     <div class="messages" id="messages"></div>
@@ -109,10 +130,17 @@
   </div>
 
   <script>
-    document.getElementById("apiKey").value = localStorage.getItem("gemini_api_key") || "";
+    // Load saved key
+    const apiInput = document.getElementById("apiKey");
+    apiInput.value = localStorage.getItem("gemini_api_key") || "";
+
+    function toggleApiKey() {
+      const container = document.getElementById("apiKeyContainer");
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+    }
 
     function saveKey() {
-      const key = document.getElementById("apiKey").value.trim();
+      const key = apiInput.value.trim();
       if (!key) return alert("Please enter a valid API key.");
       localStorage.setItem("gemini_api_key", key);
       alert("API Key saved!");
@@ -144,19 +172,17 @@
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
       // Markdown to HTML transformations
-      // Bold
-      reply = reply.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-      // Headings
-      reply = reply.replace(/^###### (.*)$/gm, '<h6>$1</h6>')
-                   .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
-                   .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
-                   .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-                   .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-                   .replace(/^# (.*)$/gm, '<h1>$1</h1>');
-      // Code blocks ```
-      reply = reply.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
-      // Inline code `code`
-      reply = reply.replace(/`([^`]+)`/g, '<code>$1</code>');
+      reply = reply
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/__(.*?)__/g, '<b>$1</b>')
+        .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+        .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+        .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+        .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+        .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
 
       addMessage(reply, "bot");
     }
