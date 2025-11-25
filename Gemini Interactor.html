@@ -7,37 +7,67 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
       margin: 0;
       padding: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light {
+      background: #f0f0f0;
+      color: #121212;
+    }
+
+    body.dark {
+      background: #121212;
+      color: #e0e0e0;
     }
 
     .chat-container {
       width: 700px;
       max-width: 90%;
       height: 85vh;
-      background: #fff;
       border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
       padding: 20px;
       display: flex;
       flex-direction: column;
+      transition: background 0.3s;
+    }
+
+    body.light .chat-container {
+      background: #fff;
+    }
+
+    body.dark .chat-container {
+      background: #1e1e1e;
     }
 
     .messages {
       flex: 1;
       overflow-y: auto;
-      border: 1px solid #ddd;
+      border: 1px solid #333;
       padding: 10px;
       border-radius: 8px;
-      background: #fafafa;
       margin-bottom: 10px;
       white-space: pre-wrap;
       font-family: inherit;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transition: background 0.3s;
+    }
+
+    body.light .messages {
+      background: #fafafa;
+      border-color: #ddd;
+    }
+
+    body.dark .messages {
+      background: #2c2c2c;
+      border-color: #333;
     }
 
     .msg {
@@ -48,30 +78,70 @@
     }
 
     .user {
-      background: #d0eaff;
       align-self: flex-end;
     }
 
+    body.light .user {
+      background: #d0eaff;
+      color: #000;
+    }
+
+    body.dark .user {
+      background: #3a6ea5;
+      color: #fff;
+    }
+
     .bot {
-      background: #e8e8e8;
       align-self: flex-start;
     }
 
+    body.light .bot {
+      background: #e8e8e8;
+      color: #000;
+    }
+
+    body.dark .bot {
+      background: #3c3c3c;
+      color: #fff;
+    }
+
     pre {
-      background: #333;
-      color: #eee;
       padding: 8px;
       border-radius: 6px;
       overflow-x: auto;
       font-family: monospace;
       margin: 8px 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light pre {
+      background: #f5f5f5;
+      color: #000;
+    }
+
+    body.dark pre {
+      background: #000;
+      color: #0f0;
     }
 
     code {
       font-family: monospace;
-      background: #f5f5f5;
       padding: 2px 4px;
       border-radius: 3px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.light code {
+      background: #e0e0e0;
+      color: #000;
+    }
+
+    body.dark code {
+      background: #444;
+      color: #f1f1f1;
     }
 
     .input-area {
@@ -79,11 +149,29 @@
       gap: 10px;
     }
 
-    input {
+    textarea {
       flex: 1;
       padding: 10px;
       border-radius: 6px;
+      border: 1px solid #555;
+      resize: none;
+      font-family: inherit;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transition: background 0.3s, color 0.3s, border 0.3s;
+    }
+
+    body.light textarea {
+      background: #fff;
+      color: #000;
       border: 1px solid #ccc;
+    }
+
+    body.dark textarea {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #555;
     }
 
     button {
@@ -93,6 +181,7 @@
       background: #007bff;
       color: white;
       cursor: pointer;
+      transition: background 0.3s;
     }
 
     button:hover {
@@ -104,16 +193,17 @@
       display: none;
     }
 
-    #showApiKeyBtn {
+    #showApiKeyBtn, #toggleDarkModeBtn {
       margin-bottom: 10px;
       align-self: flex-start;
     }
   </style>
 </head>
-<body>
+<body class="dark">
 
   <div class="chat-container">
     <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
+    <button id="toggleDarkModeBtn" onclick="toggleDarkMode()">Toggle Dark/Light Mode</button>
     <div id="apiKeyContainer">
       <div class="input-area">
         <input id="apiKey" placeholder="Your Gemini API Key..." />
@@ -124,7 +214,7 @@
     <div class="messages" id="messages"></div>
 
     <div class="input-area">
-      <input id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter'){sendMessage();}" />
+      <textarea id="msgInput" placeholder="Type a message..."></textarea>
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -138,6 +228,11 @@
       container.style.display = container.style.display === 'none' ? 'block' : 'none';
     }
 
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+    }
+
     function saveKey() {
       const key = apiInput.value.trim();
       if (!key) return alert("Please enter a valid API key.");
@@ -145,19 +240,25 @@
       alert("API Key saved!");
     }
 
+    const textarea = document.getElementById("msgInput");
+    textarea.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
     async function sendMessage() {
       const apiKey = localStorage.getItem("gemini_api_key");
       if (!apiKey) return alert("Please enter and save your API key first.");
 
-      const input = document.getElementById("msgInput");
-      const text = input.value.trim();
+      const text = textarea.value.trim();
       if (!text) return;
 
       addMessage(text, "user");
-      input.value = "";
+      textarea.value = "";
 
       const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,28 +271,24 @@
       const data = await res.json();
       let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
 
-      // Markdown to HTML transformations
+      // Cleanup stray single * or - lines
+      reply = reply.split('\n').filter(line => !(line.trim() === '*' || line.trim() === '-')).join('\n');
+
       reply = reply
-        // Bold + italics combined **_text_** or __*text*__
         .replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
         .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
-        // Bold
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
         .replace(/__(.*?)__/g, '<b>$1</b>')
-        // Italics
         .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/_(.*?)_/g, '<i>$1</i>')
-        // Headings
         .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
         .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
         .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
         .replace(/^### (.*)$/gm, '<h3>$1</h3>')
         .replace(/^## (.*)$/gm, '<h2>$1</h2>')
         .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-        // Code blocks and inline code
         .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
-        // Bullet points
         .replace(/^\*\s+(.*)$/gm, '<ul><li>$1</li></ul>');
 
       addMessage(reply, "bot");
