@@ -43,16 +43,15 @@
     body.dark th, body.dark td { border-color: #555; }
 
     .input-area { display: flex; gap: 10px; }
-    textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; resize: none; font-family: inherit; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s, border 0.3s; }
-    body.light textarea { background: #fff; color: #000; border: 1px solid #ccc; }
-    body.dark textarea { background: #1e1e1e; color: #e0e0e0; border: 1px solid #555; }
+    input[type=text], textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; font-family: inherit; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s, border 0.3s; }
+    body.light input[type=text], body.light textarea { background: #fff; color: #000; border: 1px solid #ccc; }
+    body.dark input[type=text], body.dark textarea { background: #1e1e1e; color: #e0e0e0; border: 1px solid #555; }
 
     button { padding: 10px 15px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s; }
     button:hover { background: #005fcc; }
 
-    #apiKeyContainer { margin-bottom: 10px; display: none; }
-    #systemInstructionContainer { margin-bottom: 10px; display: block; }
-    #systemInstructionContainer input { flex: 1; padding: 5px; border-radius: 4px; border: 1px solid #555; }
+    #apiKeyContainer, #systemInstructionContainer { margin-bottom: 10px; display: none; }
+    #apiKeyContainer .input-area, #systemInstructionContainer .input-area { display: flex; gap: 10px; }
   </style>
 </head>
 <body>
@@ -60,18 +59,22 @@
   <div class="chat-container">
     <div class="button-row">
       <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
+      <button id="showSystemInstructionBtn" onclick="toggleSystemInstruction()">Show System Instruction Input</button>
       <button id="toggleDarkModeBtn" onclick="toggleDarkMode()">Toggle Dark/Light Mode</button>
     </div>
+
     <div id="apiKeyContainer">
       <div class="input-area">
-        <input id="apiKey" placeholder="Your Gemini API Key..." />
+        <input id="apiKey" placeholder="Enter API Key..." />
         <button onclick="saveKey()">Save</button>
       </div>
     </div>
 
     <div id="systemInstructionContainer">
-      <label for="systemInstruction">System Instruction:</label>
-      <input id="systemInstruction" placeholder="Enter system instruction..." />
+      <div class="input-area">
+        <input id="systemInstruction" placeholder="Enter system instruction..." />
+        <button onclick="saveSystemInstruction()">Save</button>
+      </div>
     </div>
 
     <div class="messages" id="messages"></div>
@@ -86,10 +89,15 @@
     const apiInput = document.getElementById("apiKey");
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
+    const systemInput = document.getElementById("systemInstruction");
+    systemInput.value = localStorage.getItem("gemini_system_instruction") || "You are a friendly AI assistant.";
+
     const savedTheme = localStorage.getItem('gemini_theme') || 'dark';
     document.body.classList.add(savedTheme);
 
     function toggleApiKey() { document.getElementById("apiKeyContainer").style.display = document.getElementById("apiKeyContainer").style.display === 'none' ? 'block' : 'none'; }
+    function toggleSystemInstruction() { document.getElementById("systemInstructionContainer").style.display = document.getElementById("systemInstructionContainer").style.display === 'none' ? 'block' : 'none'; }
+
     function toggleDarkMode() {
       if(document.body.classList.contains('dark')) {
         document.body.classList.remove('dark');
@@ -103,6 +111,7 @@
     }
 
     function saveKey() { const key = apiInput.value.trim(); if (!key) return alert("Please enter a valid API key."); localStorage.setItem("gemini_api_key", key); alert("API Key saved!"); }
+    function saveSystemInstruction() { const instr = systemInput.value.trim(); if (!instr) return alert("Please enter a valid system instruction."); localStorage.setItem("gemini_system_instruction", instr); alert("System instruction saved!"); }
 
     const textarea = document.getElementById("msgInput");
     textarea.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
@@ -115,7 +124,7 @@
       addMessage(text, "user");
       textarea.value = "";
 
-      const systemInstruction = document.getElementById('systemInstruction').value.trim() || 'You are a friendly AI assistant.';
+      const systemInstruction = systemInput.value.trim() || '';
 
       const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
       const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: { parts: [{ text }] }, systemInstruction: { parts: [{ text: systemInstruction }] } }) });
