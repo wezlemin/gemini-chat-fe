@@ -90,7 +90,7 @@
     apiInput.value = localStorage.getItem("gemini_api_key") || "";
 
     const systemInput = document.getElementById("systemInstruction");
-    systemInput.value = localStorage.getItem("gemini_system_instruction") || "You are a friendly AI assistant.";
+    systemInput.value = localStorage.getItem("gemini_system_instruction") || "";
 
     const savedTheme = localStorage.getItem('gemini_theme') || 'dark';
     document.body.classList.add(savedTheme);
