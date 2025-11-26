@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gemini Chat (Frontend)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; transition: background 0.3s, color 0.3s; }
+    body.light { background: #f0f0f0; color: #121212; }
+    body.dark { background: #121212; color: #e0e0e0; }
+
+    .chat-container { width: 700px; max-width: 90%; height: 85vh; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5); padding: 20px; display: flex; flex-direction: column; transition: background 0.3s; }
+    body.light .chat-container { background: #fff; }
+    body.dark .chat-container { background: #1e1e1e; }
+
+    .button-row { display: flex; gap: 10px; margin-bottom: 10px; }
+
+    .messages { flex: 1; overflow-y: auto; border: 1px solid #333; padding: 10px; border-radius: 8px; margin-bottom: 10px; white-space: pre-wrap; font-family: inherit; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s; }
+    body.light .messages { background: #fafafa; border-color: #ddd; }
+    body.dark .messages { background: #2c2c2c; border-color: #333; }
+
+    .msg { margin: 4px 0; padding: 6px 10px; border-radius: 6px; word-wrap: break-word; position: relative; display: flex; align-items: flex-start; gap: 5px; }
+    .user { align-self: flex-end; }
+    body.light .user { background: #d0eaff; color: #000; }
+    body.dark .user { background: #3a6ea5; color: #fff; }
+
+    .bot { align-self: flex-start; display: flex; justify-content: space-between; }
+    body.light .bot { background: #e8e8e8; color: #000; }
+    body.dark .bot { background: #3c3c3c; color: #fff; }
+
+    .copy-message-btn { font-size: 12px; padding: 2px 6px; border: none; border-radius: 3px; cursor: pointer; background: #007bff; color: white; flex-shrink: 0; align-self: flex-start; }
+
+    pre { padding: 8px; border-radius: 6px; overflow-x: auto; font-family: monospace; margin: 4px 0; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s; position: relative; background: #f5f5f5; color: #000; }
+    body.dark pre { background: #1e1e1e; color: #0f0; }
+
+    pre button.copy-btn { position: absolute; top: 5px; right: 5px; padding: 2px 6px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; background: #28a745; color: white; }
+
+    code.inline { font-family: monospace; padding: 2px 4px; border-radius: 3px; background: #e0e0e0; color: #000; transition: background 0.3s, color 0.3s; }
+    body.dark code.inline { background: #2c2c2c; color: #0f0; }
+
+    table { border-collapse: collapse; margin: 5px 0; width: 100%; display: table; }
+    th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
+    body.dark th, body.dark td { border-color: #555; }
+
+    .input-area { display: flex; gap: 10px; }
+    input[type=text], textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #555; font-family: inherit; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; transition: background 0.3s, color 0.3s, border 0.3s; }
+    body.light input[type=text], body.light textarea { background: #fff; color: #000; border: 1px solid #ccc; }
+    body.dark input[type=text], body.dark textarea { background: #1e1e1e; color: #e0e0e0; border: 1px solid #555; }
+
+    button { padding: 10px 15px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; transition: background 0.3s; }
+    button:hover { background: #005fcc; }
+
+    #apiKeyContainer, #systemInstructionContainer { margin-bottom: 10px; display: none; }
+    #apiKeyContainer .input-area, #systemInstructionContainer .input-area { display: flex; gap: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container">
+    <div class="button-row">
+      <button id="showApiKeyBtn" onclick="toggleApiKey()">Show API Key Input</button>
+      <button id="showSystemInstructionBtn" onclick="toggleSystemInstruction()">Show System Instruction Input</button>
+      <button id="toggleDarkModeBtn" onclick="toggleDarkMode()">Toggle Dark/Light Mode</button>
+    </div>
+
+    <div id="apiKeyContainer">
+      <div class="input-area">
+        <input id="apiKey" placeholder="Enter API Key..." />
+        <button onclick="saveKey()">Save</button>
+      </div>
+    </div>
+
+    <div id="systemInstructionContainer">
+      <div class="input-area">
+        <input id="systemInstruction" placeholder="Enter system instruction..." />
+        <button onclick="saveSystemInstruction()">Save</button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <textarea id="msgInput" placeholder="Type a message..."></textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const apiInput = document.getElementById("apiKey");
+    apiInput.value = localStorage.getItem("gemini_api_key") || "";
+
+    const systemInput = document.getElementById("systemInstruction");
+    systemInput.value = localStorage.getItem("gemini_system_instruction") || "";
+
+    const savedTheme = localStorage.getItem('gemini_theme') || 'dark';
+    document.body.classList.add(savedTheme);
+
+    function toggleApiKey() { document.getElementById("apiKeyContainer").style.display = document.getElementById("apiKeyContainer").style.display === 'none' ? 'block' : 'none'; }
+    function toggleSystemInstruction() { document.getElementById("systemInstructionContainer").style.display = document.getElementById("systemInstructionContainer").style.display === 'none' ? 'block' : 'none'; }
+
+    function toggleDarkMode() {
+      if(document.body.classList.contains('dark')) {
+        document.body.classList.remove('dark');
+        document.body.classList.add('light');
+        localStorage.setItem('gemini_theme', 'light');
+      } else {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+        localStorage.setItem('gemini_theme', 'dark');
+      }
+    }
+
+    function saveKey() { const key = apiInput.value.trim(); if (!key) return alert("Please enter a valid API key."); localStorage.setItem("gemini_api_key", key); alert("API Key saved!"); }
+    function saveSystemInstruction() { const instr = systemInput.value.trim(); if (!instr) return alert("Please enter a valid system instruction."); localStorage.setItem("gemini_system_instruction", instr); alert("System instruction saved!"); }
+
+    const textarea = document.getElementById("msgInput");
+    textarea.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
+
+async function sendMessage() {
+  const apiKey = localStorage.getItem("gemini_api_key");
+  if (!apiKey) return alert("Please enter and save your API key first.");
+  
+  const text = textarea.value.trim();
+  if (!text) return;
+  addMessage(text, "user");
+  textarea.value = "";
+
+  const systemInstruction = systemInput.value.trim() || '';
+
+  const API_URL = "https://api.openai.com/v1/chat/completions";
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1", // or "gpt-4.1-mini"
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: text }
+      ]
+    })
+  });
+
+  const data = await res.json();
+  let reply = data?.choices?.[0]?.message?.content || "No response.";
+
+  // Keep your existing code formatting and markdown parsing
+  reply = reply.split('\n').map(line => line.trimEnd()).filter(line => line !== '*').join('\n');
+
+  const rawReply = reply;
+  const codeBlocks = [];
+  reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    codeBlocks.push({ lang, code });
+    return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
+  });
+
+  reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
+
+  // Existing markdown replacements
+  reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
+               .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
+               .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+               .replace(/__(.*?)__/g, '<b>$1</b>')
+               .replace(/\*(.*?)\*/g, '<i>$1</i>')
+               .replace(/_(.*?)_/g, '<i>$1</i>')
+               .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
+               .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
+               .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+               .replace(/^### (.*)$/gm, '<h3>$1</h3>')
+               .replace(/^## (.*)$/gm, '<h2>$1</h2>')
+               .replace(/^# (.*)$/gm, '<h1>$1</h1>');
+
+  // Table rendering
+  reply = reply.replace(/((?:\|.*\|\n?)+)/g, (match) => {
+    const lines = match.trim().split('\n');
+    if (lines.length < 2) return match;
+    const header = lines[0].split('|').map(c => c.trim()).filter(Boolean);
+    const bodyRows = lines.slice(2);
+    let html = '<table><thead><tr>' + header.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>'; 
+    bodyRows.forEach(row => {
+      const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+      if (cols.length) html += '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  });
+
+  reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
+    const { lang, code } = codeBlocks[index];
+    return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
+  });
+
+  addMessage(reply, "bot", rawReply);
+}
+
+
+    function addMessage(htmlContent, sender, rawMarkdown = '') {
+      const box = document.getElementById("messages");
+      const div = document.createElement("div");
+      div.className = `msg ${sender}`;
+      div.style.display = 'flex';
+      div.style.alignItems = 'flex-start';
+      div.style.gap = '5px';
+      if(sender === 'bot') div.style.justifyContent = 'space-between';
+
+      const contentSpan = document.createElement('span');
+      contentSpan.innerHTML = htmlContent;
+      div.appendChild(contentSpan);
+
+      if (sender === 'bot') {
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = 'C';
+        copyBtn.className = 'copy-message-btn';
+        copyBtn.style.marginLeft = 'auto';
+        copyBtn.onclick = () => { navigator.clipboard.writeText(rawMarkdown.trim()); alert('Message copied!'); };
+        div.appendChild(copyBtn);
+      }
+
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function copySnippet(index) {
+      const pre = document.querySelectorAll('pre')[index];
+      const codeLines = Array.from(pre.childNodes).filter(node => node.nodeName !== 'BUTTON' && node.nodeName !== 'CODE');
+      const codeText = codeLines.map(node => node.textContent).join('\n');
+      navigator.clipboard.writeText(codeText);
+      alert('Code snippet copied!');
+    }
+  </script>
+
+</body>
+</html>
