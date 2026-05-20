@@ -147,42 +147,47 @@
       div.style.display = 'flex';
       div.style.alignItems = 'flex-start';
       div.style.gap = '5px';
-      if(sender === 'bot') div.style.justifyContent = 'space-between';
+      
+      // Determine justify-content based on sender
+      div.style.justifyContent = sender === 'bot' ? 'space-between' : 'flex-end';
 
       const contentSpan = document.createElement('span');
       contentSpan.innerHTML = htmlContent;
-      
-      // --- NEW: Add copy buttons to individual code blocks ---
+
+      // Handle Code Block Copy Buttons (Only for bot)
       if (sender === 'bot') {
         const preElements = contentSpan.querySelectorAll('pre');
         preElements.forEach((pre) => {
-          // Create the copy button
           const snippetCopyBtn = document.createElement('button');
           snippetCopyBtn.textContent = 'C';
           snippetCopyBtn.className = 'copy-btn';
-          
-          // Copy the text inside the <code> block when clicked
           snippetCopyBtn.onclick = () => {
             const codeText = pre.querySelector('code')?.innerText || pre.innerText;
             navigator.clipboard.writeText(codeText);
             alert('Code snippet copied!');
           };
-          
           pre.appendChild(snippetCopyBtn);
         });
       }
-      // ------------------------------------------------------
 
       div.appendChild(contentSpan);
 
-      if (sender === 'bot') {
-        const copyBtn = document.createElement('button');
-        copyBtn.textContent = 'C';
-        copyBtn.className = 'copy-message-btn';
-        copyBtn.style.marginLeft = 'auto';
-        copyBtn.onclick = () => { navigator.clipboard.writeText(rawMarkdown.trim()); alert('Message copied!'); };
-        div.appendChild(copyBtn);
-      }
+      // --- ADDED: Copy button for both Bot AND User ---
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy'; // Changed to 'Copy' for clarity
+      copyBtn.className = 'copy-message-btn';
+      copyBtn.style.marginLeft = 'auto';
+      
+      // Use the provided rawMarkdown or fall back to the textContent of the message
+      const textToCopy = rawMarkdown || contentSpan.textContent;
+      
+      copyBtn.onclick = () => { 
+        navigator.clipboard.writeText(textToCopy.trim()); 
+        alert('Message copied!'); 
+      };
+      
+      div.appendChild(copyBtn);
+      // ------------------------------------------------
 
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
