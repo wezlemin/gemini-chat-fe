@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <title>Gemini Chat (Frontend)</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; transition: background 0.3s, color 0.3s; }
@@ -111,7 +112,7 @@
     }
 
     function saveKey() { const key = apiInput.value.trim(); if (!key) return alert("Please enter a valid API key."); localStorage.setItem("gemini_api_key", key); alert("API Key saved!"); }
-    function saveSystemInstruction() { const instr = systemInput.value.trim(); if (!instr) return alert("Please enter a valid system instruction."); localStorage.setItem("gemini_system_instruction", instr); alert("System instruction saved!"); }
+    function saveSystemInstruction() { const instr = systemInput.value.trim(); localStorage.setItem("gemini_system_instruction", instr); alert("System instruction saved!"); }
 
     const textarea = document.getElementById("msgInput");
     textarea.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); } });
@@ -134,47 +135,9 @@
       reply = reply.split('\n').map(line => line.trimEnd()).filter(line => line !== '*').join('\n');
 
       const rawReply = reply;
-      const codeBlocks = [];
-      reply = reply.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-        codeBlocks.push({ lang, code });
-        return `@@CODEBLOCK${codeBlocks.length - 1}@@`;
-      });
-
-      reply = reply.replace(/`(.*?)`/g, '<code class="inline">$1</code>');
-
-      reply = reply.replace(/\*\*_(.*?)_\*\*/g, '<b><i>$1</i></b>')
-                   .replace(/__\*(.*?)\*__/g, '<b><i>$1</i></b>')
-                   .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                   .replace(/__(.*?)__/g, '<b>$1</b>')
-                   .replace(/\*(.*?)\*/g, '<i>$1</i>')
-                   .replace(/_(.*?)_/g, '<i>$1</i>')
-                   .replace(/^###### (.*)$/gm, '<h6>$1</h6>')
-                   .replace(/^##### (.*)$/gm, '<h5>$1</h5>')
-                   .replace(/^#### (.*)$/gm, '<h4>$1</h4>')
-                   .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-                   .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-                   .replace(/^# (.*)$/gm, '<h1>$1</h1>');
-
-      reply = reply.replace(/((?:\|.*\|\n?)+)/g, (match) => {
-        const lines = match.trim().split('\n');
-        if (lines.length < 2) return match;
-        const header = lines[0].split('|').map(c => c.trim()).filter(Boolean);
-        const bodyRows = lines.slice(2);
-        let html = '<table><thead><tr>' + header.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>'; 
-        bodyRows.forEach(row => {
-          const cols = row.split('|').map(c => c.trim()).filter(Boolean);
-          if (cols.length) html += '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
-        });
-        html += '</tbody></table>';
-        return html;
-      });
-
-      reply = reply.replace(/@@CODEBLOCK(\d+)@@/g, (_, index) => {
-        const { lang, code } = codeBlocks[index];
-        return `<pre><button class='copy-btn' onclick='copySnippet(${index})'>C</button>${lang ? `<code>${lang}</code>\n` : ''}${code}</pre>`;
-      });
-
-      addMessage(reply, "bot", rawReply);
+      const htmlContent = marked.parse(reply);
+  
+      addMessage(htmlContent, "bot", rawReply);
     }
 
     function addMessage(htmlContent, sender, rawMarkdown = '') {
@@ -188,6 +151,28 @@
 
       const contentSpan = document.createElement('span');
       contentSpan.innerHTML = htmlContent;
+      
+      // --- NEW: Add copy buttons to individual code blocks ---
+      if (sender === 'bot') {
+        const preElements = contentSpan.querySelectorAll('pre');
+        preElements.forEach((pre) => {
+          // Create the copy button
+          const snippetCopyBtn = document.createElement('button');
+          snippetCopyBtn.textContent = 'C';
+          snippetCopyBtn.className = 'copy-btn';
+          
+          // Copy the text inside the <code> block when clicked
+          snippetCopyBtn.onclick = () => {
+            const codeText = pre.querySelector('code')?.innerText || pre.innerText;
+            navigator.clipboard.writeText(codeText);
+            alert('Code snippet copied!');
+          };
+          
+          pre.appendChild(snippetCopyBtn);
+        });
+      }
+      // ------------------------------------------------------
+
       div.appendChild(contentSpan);
 
       if (sender === 'bot') {
@@ -201,14 +186,6 @@
 
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
-    }
-
-    function copySnippet(index) {
-      const pre = document.querySelectorAll('pre')[index];
-      const codeLines = Array.from(pre.childNodes).filter(node => node.nodeName !== 'BUTTON' && node.nodeName !== 'CODE');
-      const codeText = codeLines.map(node => node.textContent).join('\n');
-      navigator.clipboard.writeText(codeText);
-      alert('Code snippet copied!');
     }
   </script>
 
